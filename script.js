@@ -8,46 +8,35 @@ async function downloadLogic() {
         return;
     }
 
-    // Loader එක පෙන්වීම සහ පැරණි ප්‍රතිඵල ඉවත් කිරීම
     loader.style.display = "block";
     result.innerHTML = "";
 
     try {
-        // API එක වෙත Request එක යැවීම
-        const response = await fetch("https://cobalt-api.v0l.me/", {
-            method: "POST",
-            headers: {
-                "Accept": "application/json",
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                url: url,
-                videoQuality: "720" // අවශ්‍ය Quality එක මෙහි සඳහන් කළ හැක
-            })
-        });
+        // අලුත් API එකක් - මෙය බොහෝ විට stable වේ
+        const response = await fetch(`https://api.vyt.sh/extract?url=${encodeURIComponent(url)}`);
+        
+        if (!response.ok) throw new Error('API request failed');
 
         const data = await response.json();
+        console.log("API Response:", data); // මෙතනින් අපිට error එක මොකක්ද කියලා හරියටම බලන්න පුළුවන්
 
         loader.style.display = "none";
 
-        if (data.status === "stream" || data.status === "picker" || data.status === "redirect") {
-            // සාර්ථක වූ විට ප්‍රතිඵලය පෙන්වීම
-            const downloadUrl = data.url;
+        // API එකෙන් දත්ත ලැබෙන ආකාරය අනුව මෙය සකසා ඇත
+        if (data && data.url) {
             result.innerHTML = `
-                <div style="margin-top:20px; padding:15px; background:rgba(0,255,0,0.2); border-radius:10px;">
-                    <p style="color:#fff;">වීඩියෝව සාර්ථකව සකස් කරන ලදී!</p>
-                    <a href="${downloadUrl}" target="_blank" style="color:#00d2ff; text-decoration:none; font-weight:bold; border: 1px solid #00d2ff; padding: 5px 10px; border-radius: 5px;">Download Now</a>
+                <div style="margin-top:20px; padding:15px; background:rgba(0,255,0,0.1); border: 1px solid #00ff00; border-radius:10px;">
+                    <p style="color:#fff;">වීඩියෝව හමු විය!</p>
+                    <a href="${data.url}" target="_blank" download style="color:#fff; background:#00d2ff; text-decoration:none; font-weight:bold; padding: 10px 20px; border-radius: 5px; display:inline-block; margin-top:10px;">Download Now</a>
                 </div>
             `;
         } else {
-            // API එකෙන් වැරැද්දක් ආවොත්
-            result.innerHTML = `<p style="color:red;">සමාවන්න, මෙම වීඩියෝව ලබාගත නොහැක. (Error: ${data.text || 'Unknown'})</p>`;
+            result.innerHTML = `<p style="color:#ffcc00;">සමාවන්න, මෙම ලින්ක් එකෙන් වීඩියෝව ලබාගත නොහැක. වෙනත් ලින්ක් එකක් උත්සාහ කරන්න.</p>`;
         }
 
     } catch (error) {
-        // Network Error එකක් ආවොත්
         loader.style.display = "none";
-        result.innerHTML = `<p style="color:red;">සම්බන්ධතාවයේ දෝෂයක් පවතී. කරුණාකර නැවත උත්සාහ කරන්න.</p>`;
-        console.error("Error:", error);
+        result.innerHTML = `<p style="color:#ff4d4d;">Error: API එක සම්බන්ධ කරගත නොහැකි විය. ඔබ Vercel හොස්ට් කර බලන්න.</p>`;
+        console.error("Full Error:", error);
     }
 }
